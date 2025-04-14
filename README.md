@@ -48,7 +48,8 @@ Section content...
 ## To do
 
 - [ ] Add default topics / subtopics
-- [ ] Be able to use regexes?
+- [ ] Automatize some of it
+  - [ ] Be able to use regexes?
 - [ ] Add topic
 - [ ] Change extension
 - [ ] Merge two files with the same topics

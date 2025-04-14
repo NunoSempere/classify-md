@@ -45,6 +45,23 @@ func main() {
 		fmt.Println(section)
 		fmt.Println("-------------------")
 		
+		// Check if any topic name appears in the section
+		foundTopic := false
+		var matchedTopic string
+		for _, topic := range topics {
+			if strings.Contains(strings.ToLower(section), strings.ToLower(topic)) {
+				foundTopic = true
+				matchedTopic = topic
+				break
+			}
+		}
+
+		if foundTopic {
+			fmt.Printf("\nAutomatically classified as '%s' (topic name found in content)\n", matchedTopic)
+			topicContent[matchedTopic] = append(topicContent[matchedTopic], section)
+			continue
+		}
+		
 		fmt.Println("\nAvailable topics:")
 		for i, topic := range topics {
 			fmt.Printf("%d. %s\n", i+1, topic)

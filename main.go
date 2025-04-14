@@ -49,23 +49,51 @@ func main() {
 		for i, topic := range topics {
 			fmt.Printf("%d. %s\n", i+1, topic)
 		}
+		fmt.Println("\nPress 'a' to add a new topic")
 
 		var choice int
 		for {
-			fmt.Print("\nEnter the number of the corresponding topic: ")
+			fmt.Print("\nEnter the number of the corresponding topic (or 'a' to add): ")
 			input, err := reader.ReadString('\n')
 			if err != nil {
 				fmt.Println("Error reading input. Please try again.")
 				continue
 			}
 			
-			// Convert input to integer
 			input = strings.TrimSpace(input)
+			
+			if input == "a" {
+				fmt.Print("Enter new topic name: ")
+				topicName, err := reader.ReadString('\n')
+				if err != nil {
+					fmt.Println("Error reading topic name. Please try again.")
+					continue
+				}
+				topicName = strings.TrimSpace(topicName)
+				if topicName == "" {
+					fmt.Println("Topic name cannot be empty. Please try again.")
+					continue
+				}
+				
+				// Add the new topic
+				topics = append(topics, topicName)
+				topicContent[topicName] = []string{}
+				fmt.Printf("Added new topic: %s\n", topicName)
+				
+				// Show updated topic list
+				fmt.Println("\nAvailable topics:")
+				for i, topic := range topics {
+					fmt.Printf("%d. %s\n", i+1, topic)
+				}
+				continue
+			}
+			
+			// Convert input to integer
 			choice, err = strconv.Atoi(input)
 			if err == nil && choice > 0 && choice <= len(topics) {
 				break
 			}
-			fmt.Println("Invalid choice. Please enter a number between 1 and", len(topics))
+			fmt.Println("Invalid choice. Please enter a number between 1 and", len(topics), "or 'a' to add a topic")
 		}
 
 		// Add the section to the chosen topic
@@ -74,7 +102,13 @@ func main() {
 	}
 
 	// Create the output file
-	outputFile := markdownFile + ".ordered"
+	fileExt := ".md" // Default extension
+	baseName := markdownFile
+	if lastDot := strings.LastIndex(markdownFile, "."); lastDot >= 0 {
+		fileExt = markdownFile[lastDot:]
+		baseName = markdownFile[:lastDot]
+	}
+	outputFile := baseName + ".ordered" + fileExt
 	file, err := os.Create(outputFile)
 	if err != nil {
 		fmt.Printf("Error creating output file: %v\n", err)

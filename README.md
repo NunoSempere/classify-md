@@ -9,6 +9,7 @@ go run main.go <topics_file> <markdown_file>
 ```
 
 The program will:
+
 1. Read the topics from the topics file (one topic per line)
 2. Read the markdown file and split it into sections (separated by empty lines)
 3. For each section:
@@ -20,10 +21,10 @@ The program will:
 ## Example
 
 ```bash
-go run main.go example_topics.txt example_markdown.md
+go run main.go example/topics.txt example/markdown.md
 ```
 
-This will create `example_markdown.md.ordered` containing all sections organized under their respective topic headers.
+This will create `example_markdown.ordered.md` containing all sections organized under their respective topic headers.
 
 ## Output Format
 
@@ -43,3 +44,12 @@ Section content...
 
 Section content...
 ```
+
+## To do
+
+- [ ] Add default topics / subtopics
+- [ ] Be able to use regexes?
+- [ ] Add topic
+- [ ] Change extension
+- [ ] Merge two files with the same topics
+- [ ] Share with forecasters

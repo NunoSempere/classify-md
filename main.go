@@ -10,6 +10,7 @@ import (
 
 type Topic struct {
 	name     string
+	heading  string   // Store the full heading including # symbols
 	keywords []string
 }
 
@@ -184,8 +185,8 @@ func main() {
 
 	// Write all content to the file
 	for _, topic := range topics {
-		// Write topic header
-		_, err := file.WriteString(fmt.Sprintf("# %s\n\n", topic.name))
+		// Write topic header with original heading symbols
+		_, err := file.WriteString(fmt.Sprintf("%s\n\n", topic.heading))
 		if err != nil {
 			fmt.Printf("Error writing topic header: %v\n", err)
 			os.Exit(1)
@@ -225,7 +226,13 @@ func readTopics(filename string) ([]Topic, error) {
 
 		// Split line by ':' to separate topic name and keywords
 		parts := strings.Split(line, ":")
-		topic := Topic{name: strings.TrimSpace(parts[0])}
+		heading := parts[0]
+		name := strings.TrimSpace(strings.TrimLeft(heading, "#")) // Remove # symbols for the name
+		
+		topic := Topic{
+			name:    name,
+			heading: heading,
+		}
 		
 		// If there are keywords, process them
 		if len(parts) > 1 {
@@ -302,13 +309,8 @@ func readExistingOrderedFile(filename string) (map[string][]string, error) {
 	for scanner.Scan() {
 		line := scanner.Text()
 		
-		// Check if this is a topic line
-		if strings.TrimSpace(line) != "" && !strings.HasPrefix(line, "#") && currentTopic != "" {
-			if currentSection.Len() > 0 {
-				currentSection.WriteString("\n")
-			}
-			currentSection.WriteString(line)
-		} else if strings.HasPrefix(line, "#") {
+		// Check if this is a topic line (starts with any number of # symbols)
+		if strings.HasPrefix(strings.TrimSpace(line), "#") {
 			// Save previous section if it exists
 			if currentSection.Len() > 0 && currentTopic != "" {
 				section := strings.TrimSpace(currentSection.String())
@@ -317,8 +319,13 @@ func readExistingOrderedFile(filename string) (map[string][]string, error) {
 				}
 				currentSection.Reset()
 			}
-			// Set new topic
-			currentTopic = strings.TrimSpace(strings.TrimPrefix(line, "#"))
+			// Set new topic (remove # symbols)
+			currentTopic = strings.TrimSpace(strings.TrimLeft(line, "#"))
+		} else if strings.TrimSpace(line) != "" && currentTopic != "" {
+			if currentSection.Len() > 0 {
+				currentSection.WriteString("\n")
+			}
+			currentSection.WriteString(line)
 		} else if strings.TrimSpace(line) == "" && currentSection.Len() > 0 {
 			// Empty line - save current section if we have one
 			section := strings.TrimSpace(currentSection.String())

@@ -1,5 +1,5 @@
-Introduction: welcome, getting started
-Installation: install, setup, run
-Usage: how to, features, command
-API Reference: endpoint, GET, POST, DELETE
-Contributing: contribute, PR, pull request, help
+## Introduction: welcome, getting started
+## Installation: install, setup, run
+## Usage: how to, features, command
+### API Reference: endpoint, GET, POST, DELETE
+## Contributing: contribute, PR, pull request, help

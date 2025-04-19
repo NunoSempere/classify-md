@@ -34,10 +34,31 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Determine output file name
+	fileExt := ".md" // Default extension
+	baseName := markdownFile
+	if lastDot := strings.LastIndex(markdownFile, "."); lastDot >= 0 {
+		fileExt = markdownFile[lastDot:]
+		baseName = markdownFile[:lastDot]
+	}
+	outputFile := baseName + ".ordered" + fileExt
+
+	// Read existing content if the file exists
+	existingContent, err := readExistingOrderedFile(outputFile)
+	if err != nil {
+		fmt.Printf("Error reading existing ordered file: %v\n", err)
+		os.Exit(1)
+	}
+
 	// Create a map to store sections for each topic
 	topicContent := make(map[string][]string)
 	for _, topic := range topics {
-		topicContent[topic.name] = []string{}
+		// Initialize with existing content if any
+		if existing, ok := existingContent[topic.name]; ok {
+			topicContent[topic.name] = existing
+		} else {
+			topicContent[topic.name] = []string{}
+		}
 	}
 
 	// Create a reader for user input
@@ -50,6 +71,20 @@ func main() {
 		fmt.Println(section)
 		fmt.Println("-------------------")
 		
+		// Check if section already exists in any topic
+		sectionFound := false
+		for _, topic := range topics {
+			if sectionExists(section, topicContent[topic.name]) {
+				fmt.Printf("\nSection already exists under topic '%s'\n", topic.name)
+				sectionFound = true
+				break
+			}
+		}
+		
+		if sectionFound {
+			continue
+		}
+
 		// Check if topic name or any keywords appear in the section
 		foundTopic := false
 		var matchedTopic string
@@ -113,7 +148,8 @@ func main() {
 				}
 				
 				// Add the new topic
-				topics = append(topics, Topic{name: topicName})
+				newTopic := Topic{name: topicName}
+				topics = append(topics, newTopic)
 				topicContent[topicName] = []string{}
 				fmt.Printf("Added new topic: %s\n", topicName)
 				
@@ -139,13 +175,6 @@ func main() {
 	}
 
 	// Create the output file
-	fileExt := ".md" // Default extension
-	baseName := markdownFile
-	if lastDot := strings.LastIndex(markdownFile, "."); lastDot >= 0 {
-		fileExt = markdownFile[lastDot:]
-		baseName = markdownFile[:lastDot]
-	}
-	outputFile := baseName + ".ordered" + fileExt
 	file, err := os.Create(outputFile)
 	if err != nil {
 		fmt.Printf("Error creating output file: %v\n", err)
@@ -156,7 +185,7 @@ func main() {
 	// Write all content to the file
 	for _, topic := range topics {
 		// Write topic header
-		_, err := file.WriteString(fmt.Sprintf("%s\n\n", topic.name))
+		_, err := file.WriteString(fmt.Sprintf("# %s\n\n", topic.name))
 		if err != nil {
 			fmt.Printf("Error writing topic header: %v\n", err)
 			os.Exit(1)
@@ -172,7 +201,11 @@ func main() {
 		}
 	}
 
-	fmt.Printf("\nClassified sections have been saved to: %s\n", outputFile)
+	if _, err := os.Stat(outputFile); os.IsNotExist(err) {
+		fmt.Printf("\nCreated new file: %s\n", outputFile)
+	} else {
+		fmt.Printf("\nUpdated existing file: %s\n", outputFile)
+	}
 }
 
 func readTopics(filename string) ([]Topic, error) {
@@ -250,4 +283,68 @@ func readMarkdownSections(filename string) ([]string, error) {
 	}
 
 	return sections, scanner.Err()
+}
+
+func readExistingOrderedFile(filename string) (map[string][]string, error) {
+	content, err := os.ReadFile(filename)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return make(map[string][]string), nil
+		}
+		return nil, err
+	}
+
+	existingContent := make(map[string][]string)
+	var currentTopic string
+	var currentSection strings.Builder
+	
+	scanner := bufio.NewScanner(strings.NewReader(string(content)))
+	for scanner.Scan() {
+		line := scanner.Text()
+		
+		// Check if this is a topic line
+		if strings.TrimSpace(line) != "" && !strings.HasPrefix(line, "#") && currentTopic != "" {
+			if currentSection.Len() > 0 {
+				currentSection.WriteString("\n")
+			}
+			currentSection.WriteString(line)
+		} else if strings.HasPrefix(line, "#") {
+			// Save previous section if it exists
+			if currentSection.Len() > 0 && currentTopic != "" {
+				section := strings.TrimSpace(currentSection.String())
+				if section != "" {
+					existingContent[currentTopic] = append(existingContent[currentTopic], section)
+				}
+				currentSection.Reset()
+			}
+			// Set new topic
+			currentTopic = strings.TrimSpace(strings.TrimPrefix(line, "#"))
+		} else if strings.TrimSpace(line) == "" && currentSection.Len() > 0 {
+			// Empty line - save current section if we have one
+			section := strings.TrimSpace(currentSection.String())
+			if section != "" && currentTopic != "" {
+				existingContent[currentTopic] = append(existingContent[currentTopic], section)
+			}
+			currentSection.Reset()
+		}
+	}
+
+	// Add final section if it exists
+	if currentSection.Len() > 0 && currentTopic != "" {
+		section := strings.TrimSpace(currentSection.String())
+		if section != "" {
+			existingContent[currentTopic] = append(existingContent[currentTopic], section)
+		}
+	}
+
+	return existingContent, scanner.Err()
+}
+
+func sectionExists(section string, existingSections []string) bool {
+	for _, existing := range existingSections {
+		if strings.TrimSpace(existing) == strings.TrimSpace(section) {
+			return true
+		}
+	}
+	return false
 }

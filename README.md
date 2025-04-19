@@ -49,8 +49,13 @@ Section content...
 
 - [ ] Add default topics / subtopics
 - [ ] Automatize some of it
-  - [ ] Be able to use regexes?
+  - [ ] Be able to use keywords
+  - [ ] Be able to use regexes
 - [ ] Add topic
 - [ ] Change extension
 - [ ] Merge two files with the same topics
 - [ ] Share with forecasters
+- [ ] Make itempotent; some way to signal that topic is in the right position
+  - Three files: input, topics, ordered
+- [ ] Insert in correct topic from the beginning in minutes and then just merge topics? 
+- [ ] Add more 

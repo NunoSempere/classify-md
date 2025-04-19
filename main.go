@@ -8,6 +8,11 @@ import (
 	"strings"
 )
 
+type Topic struct {
+	name     string
+	keywords []string
+}
+
 func main() {
 	if len(os.Args) != 3 {
 		fmt.Println("Usage: topic_classifier <topics_file> <markdown_file>")
@@ -32,7 +37,7 @@ func main() {
 	// Create a map to store sections for each topic
 	topicContent := make(map[string][]string)
 	for _, topic := range topics {
-		topicContent[topic] = []string{}
+		topicContent[topic.name] = []string{}
 	}
 
 	// Create a reader for user input
@@ -45,26 +50,41 @@ func main() {
 		fmt.Println(section)
 		fmt.Println("-------------------")
 		
-		// Check if any topic name appears in the section
+		// Check if topic name or any keywords appear in the section
 		foundTopic := false
 		var matchedTopic string
+		sectionLower := strings.ToLower(section)
+		
 		for _, topic := range topics {
-			if strings.Contains(strings.ToLower(section), strings.ToLower(topic)) {
+			// Check topic name
+			if strings.Contains(sectionLower, strings.ToLower(topic.name)) {
 				foundTopic = true
-				matchedTopic = topic
+				matchedTopic = topic.name
+				break
+			}
+			
+			// Check keywords
+			for _, keyword := range topic.keywords {
+				if strings.Contains(sectionLower, keyword) {
+					foundTopic = true
+					matchedTopic = topic.name
+					break
+				}
+			}
+			if foundTopic {
 				break
 			}
 		}
 
 		if foundTopic {
-			fmt.Printf("\nAutomatically classified as '%s' (topic name found in content)\n", matchedTopic)
+			fmt.Printf("\nAutomatically classified as '%s' (matched topic name or keyword)\n", matchedTopic)
 			topicContent[matchedTopic] = append(topicContent[matchedTopic], section)
 			continue
 		}
 		
 		fmt.Println("\nAvailable topics:")
 		for i, topic := range topics {
-			fmt.Printf("%d. %s\n", i+1, topic)
+			fmt.Printf("%d. %s\n", i+1, topic.name)
 		}
 		fmt.Println("\nPress 'a' to add a new topic")
 
@@ -93,14 +113,14 @@ func main() {
 				}
 				
 				// Add the new topic
-				topics = append(topics, topicName)
+				topics = append(topics, Topic{name: topicName})
 				topicContent[topicName] = []string{}
 				fmt.Printf("Added new topic: %s\n", topicName)
 				
 				// Show updated topic list
 				fmt.Println("\nAvailable topics:")
 				for i, topic := range topics {
-					fmt.Printf("%d. %s\n", i+1, topic)
+					fmt.Printf("%d. %s\n", i+1, topic.name)
 				}
 				continue
 			}
@@ -114,7 +134,7 @@ func main() {
 		}
 
 		// Add the section to the chosen topic
-		selectedTopic := topics[choice-1]
+		selectedTopic := topics[choice-1].name
 		topicContent[selectedTopic] = append(topicContent[selectedTopic], section)
 	}
 
@@ -136,14 +156,14 @@ func main() {
 	// Write all content to the file
 	for _, topic := range topics {
 		// Write topic header
-		_, err := file.WriteString(fmt.Sprintf("# %s\n\n", topic))
+		_, err := file.WriteString(fmt.Sprintf("%s\n\n", topic.name))
 		if err != nil {
 			fmt.Printf("Error writing topic header: %v\n", err)
 			os.Exit(1)
 		}
 
 		// Write all sections for this topic
-		for _, section := range topicContent[topic] {
+		for _, section := range topicContent[topic.name] {
 			_, err := file.WriteString(section + "\n\n")
 			if err != nil {
 				fmt.Printf("Error writing section: %v\n", err)
@@ -155,20 +175,38 @@ func main() {
 	fmt.Printf("\nClassified sections have been saved to: %s\n", outputFile)
 }
 
-func readTopics(filename string) ([]string, error) {
+func readTopics(filename string) ([]Topic, error) {
 	file, err := os.Open(filename)
 	if err != nil {
 		return nil, err
 	}
 	defer file.Close()
 
-	var topics []string
+	var topics []Topic
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		topic := strings.TrimSpace(scanner.Text())
-		if topic != "" {
-			topics = append(topics, topic)
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" {
+			continue
 		}
+
+		// Split line by ':' to separate topic name and keywords
+		parts := strings.Split(line, ":")
+		topic := Topic{name: strings.TrimSpace(parts[0])}
+		
+		// If there are keywords, process them
+		if len(parts) > 1 {
+			// Split keywords by comma and trim spaces
+			keywords := strings.Split(parts[1], ",")
+			for _, keyword := range keywords {
+				keyword = strings.TrimSpace(keyword)
+				if keyword != "" {
+					topic.keywords = append(topic.keywords, strings.ToLower(keyword))
+				}
+			}
+		}
+		
+		topics = append(topics, topic)
 	}
 	return topics, scanner.Err()
 }

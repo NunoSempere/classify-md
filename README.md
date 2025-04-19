@@ -47,15 +47,15 @@ Section content...
 
 ## To do
 
-- [ ] Add default topics / subtopics
+- [ ] ~~Add default topics / subtopics~~
 - [ ] Automatize some of it
-  - [ ] Be able to use keywords
+  - [x] Be able to use keywords
   - [ ] Be able to use regexes
-- [ ] Add topic
-- [ ] Change extension
-- [ ] Merge two files with the same topics
+- [x] Allow user to add topic
+- [x] Change extension
+- [ ] Make idempotent? 
+  - [ ] Merge two files with the same topics
+  - [ ] Insert on file if it already exists?
+  - [ ] Insert in correct topic from the beginning in minutes and then just merge topics? 
 - [ ] Share with forecasters
-- [ ] Make itempotent; some way to signal that topic is in the right position
   - Three files: input, topics, ordered
-- [ ] Insert in correct topic from the beginning in minutes and then just merge topics? 
-- [ ] Add more 

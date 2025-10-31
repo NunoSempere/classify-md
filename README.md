@@ -26,6 +26,8 @@ go run main.go example/topics.txt example/markdown.md
 
 This will create `example_markdown.ordered.md` containing all sections organized under their respective topic headers.
 
+The script is safely rerunnable. Only new items will be asked about
+
 ## Output Format
 
 The output file will be structured like this:
@@ -53,9 +55,9 @@ Section content...
   - [ ] Be able to use regexes
 - [x] Allow user to add topic
 - [x] Change extension
-- [ ] Make idempotent? 
-  - [ ] Merge two files with the same topics
-  - [ ] Insert on file if it already exists?
-  - [ ] Insert in correct topic from the beginning in minutes and then just merge topics? 
+- [x] Make idempotent / rerunnable
+  - [ ] ~~Merge two files with the same topics~~
+  - [x] Insert on file if it already exists?
+  - [ ] ~~Insert in correct topic from the beginning in minutes and then just merge topics?~~
 - [ ] Share with forecasters
   - Three files: input, topics, ordered

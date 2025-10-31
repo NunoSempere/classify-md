@@ -1,8 +1,8 @@
 build:
-	go build -o topicator
+	go build -o classify
 
 install:
-	sudo cp topicator /usr/bin/topicator
+	sudo cp classify /usr/bin/classify
 
 run:
 	go run main.go example/topics.txt example/markdown.md

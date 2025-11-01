@@ -113,9 +113,24 @@ func main() {
 		}
 
 		if foundTopic {
-			fmt.Printf("\nAutomatically classified as '%s' (matched topic name or keyword)\n", matchedTopic)
-			topicContent[matchedTopic] = append(topicContent[matchedTopic], section)
-			continue
+			fmt.Printf("\nDefault classification: '%s' (matched topic name or keyword)\n", matchedTopic)
+			fmt.Print("Accept this classification? [y/n]: ")
+			
+			acceptInput, err := reader.ReadString('\n')
+			if err != nil {
+				fmt.Println("Error reading input. Skipping section.")
+				continue
+			}
+			
+			acceptInput = strings.TrimSpace(strings.ToLower(acceptInput))
+			
+			if acceptInput == "y" || acceptInput == "yes" {
+				topicContent[matchedTopic] = append(topicContent[matchedTopic], section)
+				continue
+			}
+			
+			// User declined - fall through to manual selection
+			fmt.Println("\nPlease select a different topic:")
 		}
 		
 		fmt.Println("\nAvailable topics:")

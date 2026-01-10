@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"os"
 	"strconv"
@@ -15,13 +16,29 @@ type Topic struct {
 }
 
 func main() {
-	if len(os.Args) != 3 {
-		fmt.Println("Usage: topic_classifier <topics_file> <markdown_file>")
+	automatic := flag.Bool("a", false, "Enable fully automatic classification using OpenAI")
+	flag.BoolVar(automatic, "automatic", false, "Enable fully automatic classification using OpenAI")
+	flag.Parse()
+
+	args := flag.Args()
+	if len(args) != 2 {
+		fmt.Println("Usage: classify [-a|--automatic] <topics_file> <markdown_file>")
+		fmt.Println("  -a, --automatic  Enable fully automatic classification using OpenAI")
+		fmt.Println("                   Requires OPENAI_API_KEY environment variable")
 		os.Exit(1)
 	}
 
-	topicsFile := os.Args[1]
-	markdownFile := os.Args[2]
+	topicsFile := args[0]
+	markdownFile := args[1]
+
+	var openaiToken string
+	if *automatic {
+		openaiToken = os.Getenv("OPENAI_API_KEY")
+		if openaiToken == "" {
+			fmt.Println("Error: OPENAI_API_KEY environment variable is required for automatic mode")
+			os.Exit(1)
+		}
+	}
 
 	topics, err := readTopics(topicsFile)
 	if err != nil {
@@ -86,7 +103,28 @@ func main() {
 			continue
 		}
 
-		// Check if topic name or any keywords appear in the section
+		// Automatic mode: use OpenAI for classification
+		if *automatic {
+			topicNames := make([]string, len(topics))
+			for i, t := range topics {
+				topicNames[i] = t.name
+			}
+
+			topicIndex, reasoning, err := ClassifySection(section, topicNames, openaiToken)
+			if err != nil {
+				fmt.Printf("\nOpenAI classification error: %v\n", err)
+				fmt.Println("Skipping section.")
+				continue
+			}
+
+			selectedTopic := topics[topicIndex].name
+			fmt.Printf("\nClassified as: '%s'\n", selectedTopic)
+			fmt.Printf("Reasoning: %s\n", reasoning)
+			topicContent[selectedTopic] = append(topicContent[selectedTopic], section)
+			continue
+		}
+
+		// Manual mode: check if topic name or any keywords appear in the section
 		foundTopic := false
 		var matchedTopic string
 		sectionLower := strings.ToLower(section)

@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Topic struct {
@@ -88,7 +89,7 @@ func main() {
 		fmt.Println("-------------------")
 		fmt.Println(section)
 		fmt.Println("-------------------")
-		
+
 		// Check if section already exists in any topic
 		sectionFound := false
 		for _, topic := range topics {
@@ -98,22 +99,46 @@ func main() {
 				break
 			}
 		}
-		
+
 		if sectionFound {
+			// Add small delay before processing next item
+			time.Sleep(500 * time.Millisecond)
 			continue
 		}
 
-		// Automatic mode: use OpenAI for classification
+		// Automatic mode: use OpenAI for classification with retry logic
 		if *automatic {
 			topicNames := make([]string, len(topics))
 			for i, t := range topics {
 				topicNames[i] = t.name
 			}
 
-			topicIndex, reasoning, err := ClassifySection(section, topicNames, openaiToken)
+			// Retry with exponential backoff
+			const maxRetries = 5
+			var topicIndex int
+			var reasoning string
+			var err error
+
+			for attempt := 0; attempt < maxRetries; attempt++ {
+				if attempt > 0 {
+					// Exponential backoff: 2^attempt seconds
+					backoffDuration := time.Duration(1<<uint(attempt)) * time.Second
+					fmt.Printf("\nRetry attempt %d/%d after %v...\n", attempt+1, maxRetries, backoffDuration)
+					time.Sleep(backoffDuration)
+				}
+
+				topicIndex, reasoning, err = ClassifySection(section, topicNames, openaiToken)
+				if err == nil {
+					break // Success!
+				}
+
+				fmt.Printf("\nOpenAI classification error (attempt %d/%d): %v\n", attempt+1, maxRetries, err)
+			}
+
 			if err != nil {
-				fmt.Printf("\nOpenAI classification error: %v\n", err)
-				fmt.Println("Skipping section.")
+				fmt.Printf("\nFailed to classify after %d attempts. Skipping section.\n", maxRetries)
+				// Add small delay before processing next item
+				time.Sleep(500 * time.Millisecond)
 				continue
 			}
 
@@ -121,6 +146,9 @@ func main() {
 			fmt.Printf("\nClassified as: '%s'\n", selectedTopic)
 			fmt.Printf("Reasoning: %s\n", reasoning)
 			topicContent[selectedTopic] = append(topicContent[selectedTopic], section)
+
+			// Add small delay between items
+			time.Sleep(500 * time.Millisecond)
 			continue
 		}
 
@@ -164,9 +192,11 @@ func main() {
 			
 			if acceptInput == "y" || acceptInput == "yes" {
 				topicContent[matchedTopic] = append(topicContent[matchedTopic], section)
+				// Add small delay between items
+				time.Sleep(500 * time.Millisecond)
 				continue
 			}
-			
+
 			// User declined - fall through to manual selection
 			fmt.Println("\nPlease select a different topic:")
 		}
@@ -226,6 +256,9 @@ func main() {
 		// Add the section to the chosen topic
 		selectedTopic := topics[choice-1].name
 		topicContent[selectedTopic] = append(topicContent[selectedTopic], section)
+
+		// Add small delay between items
+		time.Sleep(500 * time.Millisecond)
 	}
 
 	// Create the output file

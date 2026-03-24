@@ -319,15 +319,28 @@ Choose the single most relevant topic based on the content of the section.`
 
 	answerJSON, err := fetchOpenAIAnswerJSON(OpenAIRequest{prompt: prompt, model: GPT4_o_mini, token: token}, openaiSchema)
 	if err != nil {
+		log.Printf("ERROR: OpenAI API call failed")
+		log.Printf("  Model: %s", GPT4_o_mini)
+		log.Printf("  Section length: %d characters", len(section))
+		log.Printf("  Number of topics: %d", len(topicNames))
+		log.Printf("  Error: %v", err)
 		return -1, "", fmt.Errorf("OpenAI API error: %v", err)
 	}
 
 	if answerJSON == "" {
-		return -1, "", fmt.Errorf("empty response from OpenAI")
+		log.Printf("ERROR: Empty response from OpenAI")
+		log.Printf("  Model: %s", GPT4_o_mini)
+		log.Printf("  Section length: %d characters", len(section))
+		log.Printf("  Section preview: %.200s...", section)
+		log.Printf("  Number of topics: %d", len(topicNames))
+		return -1, "", fmt.Errorf("empty response from OpenAI (section: %.100s...)", section)
 	}
 
 	err = json.Unmarshal([]byte(answerJSON), &classificationBox)
 	if err != nil {
+		log.Printf("ERROR: Failed to unmarshal JSON response")
+		log.Printf("  Raw response: %s", answerJSON)
+		log.Printf("  Unmarshal error: %v", err)
 		return -1, "", fmt.Errorf("error unmarshalling json: %v (raw response: %s)", err, answerJSON)
 	}
 
